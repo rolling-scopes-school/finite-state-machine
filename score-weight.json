@@ -1,5 +1,5 @@
 {
-  "finite-state-machine": {
+  "FSM": {
     "weight": 100,
     "suitesWeights": {
       "#constructor": 5,
