@@ -10,8 +10,8 @@ class FSM {
         this.prevState = null;
         this.states = config.states;
         this.history = [];
-        this.initialState = true;
-        this.redoEnabled = false;
+        this.undos = [];
+        this.undosShift = 0;
     }
 
     /**
@@ -26,16 +26,18 @@ class FSM {
      * Goes to specified state.
      * @param state
      */
-    changeState(state) {
+    changeState(state, cancel) {
         if (!(state in this.states)) { throw new Error('This state does not exist!'); }
+
+        if (!cancel) {
+            this.undos = [];
+            this.undosShift = 0;
+        }
 
         this.prevState = this.currentState;
         this.currentState = state;
 
         this.history.push(this.prevState);
-        this.initialState = false;
-
-        this.redoEnabled = false;
     }
 
     /**
@@ -79,11 +81,15 @@ class FSM {
      * @returns {Boolean}
      */
     undo() {
-        if (!this.history.length) { return false; }
+        if (!this.undos.length) { this.undosShift = this.history.length; }
 
-        this.changeState(this.history.pop());
+        let undoState = this.history[--this.undosShift];
 
-        this.redoEnabled = true;
+        if (!this.history.length || this.undosShift < 0) { return false; }
+
+        this.undos.push(undoState);
+        this.changeState(undoState, true);
+
         return true;
     }
 
@@ -93,9 +99,10 @@ class FSM {
      * @returns {Boolean}
      */
     redo() {
-        if (!this.history.length || !this.redoEnabled) { return false; }
+        if (!this.undos.length) { return false; }
 
-        this.changeState(this.history.pop());
+        this.undos.pop();
+        this.changeState(this.history[++this.undosShift], true);
 
         return true;
     }
